@@ -1,68 +1,33 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+mapping(address => uint256) public totalRewardsEarned;
 
-contract YieldFarming {
-    address public owner;
-    bool public isPaused = false;
+function stake() external payable notPaused {
+    require(msg.value > 0, "You must stake more than 0 ETH");
+    stakedBalance[msg.sender] += msg.value;
+    uint256 reward = (msg.value * rewardRate) / 100;
+    rewardBalance[msg.sender] += reward;
+    totalRewardsEarned[msg.sender] += reward;
+}
 
-    mapping(address => uint256) public stakedBalance;
-    mapping(address => uint256) public rewardBalance;
+function depositRewards() external payable onlyOwner {
+    require(msg.value > 0, "Must deposit some ETH");
+}
 
-    uint256 public rewardRate = 10; // 10%
+function restakeRewards() external notPaused {
+    uint256 rewards = rewardBalance[msg.sender];
+    require(rewards > 0, "No rewards to restake");
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not contract owner");
-        _;
-    }
+    rewardBalance[msg.sender] = 0;
+    stakedBalance[msg.sender] += rewards;
 
-    modifier notPaused() {
-        require(!isPaused, "Staking is paused");
-        _;
-    }
+    uint256 newReward = (rewards * rewardRate) / 100;
+    rewardBalance[msg.sender] += newReward;
+    totalRewardsEarned[msg.sender] += newReward;
+}
 
-    constructor() {
-        owner = msg.sender;
-    }
+function getStakeAndRewards(address _user) external view returns (uint256 stake, uint256 rewards) {
+    return (stakedBalance[_user], rewardBalance[_user]);
+}
 
-    function stake() external payable notPaused {
-        require(msg.value > 0, "You must stake more than 0 ETH");
-        stakedBalance[msg.sender] += msg.value;
-        rewardBalance[msg.sender] += (msg.value * rewardRate) / 100;
-    }
-
-    function withdraw() external {
-        uint256 staked = stakedBalance[msg.sender];
-        uint256 rewards = rewardBalance[msg.sender];
-        require(staked > 0, "Nothing to withdraw");
-
-        stakedBalance[msg.sender] = 0;
-        rewardBalance[msg.sender] = 0;
-
-        payable(msg.sender).transfer(staked + rewards);
-    }
-
-    // 🧾 Check your balance and rewards
-    function getMyStakeAndRewards() external view returns (uint256 stake, uint256 rewards) {
-        return (stakedBalance[msg.sender], rewardBalance[msg.sender]);
-    }
-
-    // 💼 Owner can check total funds in contract
-    function getContractBalance() external view returns (uint256) {
-        return address(this).balance;
-    }
-
-    // ⚠️ Emergency withdraw (owner only)
-    function emergencyWithdraw() external onlyOwner {
-        payable(owner).transfer(address(this).balance);
-    }
-
-    // 🔄 Update reward rate (owner only)
-    function setRewardRate(uint256 _newRate) external onlyOwner {
-        rewardRate = _newRate;
-    }
-
-    // ⏸ Pause and resume staking
-    function pauseStaking(bool _state) external onlyOwner {
-        isPaused = _state;
-    }
+function burnUserRewards(address _user) external onlyOwner {
+    rewardBalance[_user] = 0;
 }
