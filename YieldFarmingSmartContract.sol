@@ -1,33 +1,30 @@
-mapping(address => uint256) public totalRewardsEarned;
 
-function stake() external payable notPaused {
-    require(msg.value > 0, "You must stake more than 0 ETH");
-    stakedBalance[msg.sender] += msg.value;
-    uint256 reward = (msg.value * rewardRate) / 100;
-    rewardBalance[msg.sender] += reward;
-    totalRewardsEarned[msg.sender] += reward;
+function withdrawStake(uint256 amount) external notPaused {
+    require(stakedBalance[msg.sender] >= amount, "Insufficient staked balance");
+    stakedBalance[msg.sender] -= amount;
+    payable(msg.sender).transfer(amount);
 }
-
-function depositRewards() external payable onlyOwner {
-    require(msg.value > 0, "Must deposit some ETH");
-}
-
-function restakeRewards() external notPaused {
+function claimRewards() external notPaused {
     uint256 rewards = rewardBalance[msg.sender];
-    require(rewards > 0, "No rewards to restake");
+    require(rewards > 0, "No rewards to claim");
 
     rewardBalance[msg.sender] = 0;
-    stakedBalance[msg.sender] += rewards;
+    payable(msg.sender).transfer(rewards);
+}
+function getTotalRewardsEarned(address _user) external view returns (uint256) {
+    return totalRewardsEarned[_user];
+}
+bool public paused = false;
 
-    uint256 newReward = (rewards * rewardRate) / 100;
-    rewardBalance[msg.sender] += newReward;
-    totalRewardsEarned[msg.sender] += newReward;
+modifier notPaused() {
+    require(!paused, "Staking is paused");
+    _;
 }
 
-function getStakeAndRewards(address _user) external view returns (uint256 stake, uint256 rewards) {
-    return (stakedBalance[_user], rewardBalance[_user]);
+function pause() external onlyOwner {
+    paused = true;
 }
 
-function burnUserRewards(address _user) external onlyOwner {
-    rewardBalance[_user] = 0;
+function unpause() external onlyOwner {
+    paused = false;
 }
