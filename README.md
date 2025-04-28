@@ -20,6 +20,6 @@ To simplify DeFi adoption by creating a lightweight and transparent yield farmin
 
 ---
 
-Contract Address: 0x3C7d209C45816A263c3cFdf57b82dee1b6f57f89
+Contract Address: 0x807e86C136237e818Cba40b0AF005D372570CF4B
 ![Screenshot 2025-04-23 154117](https://github.com/user-attachments/assets/8848c6ec-c568-4581-8f87-2c75f23be99d)
 
